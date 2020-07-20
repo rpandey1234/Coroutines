@@ -9,6 +9,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.math.BigInteger
@@ -32,16 +33,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCompute.setOnClickListener {
-            progressBar.visibility = View.VISIBLE
-            val timeTaken = doExpensiveWork()
-            progressBar.visibility = View.INVISIBLE
-            textView.text = timeTaken
+            CoroutineScope(Dispatchers.Main).launch {
+                progressBar.visibility = View.VISIBLE
+                val timeTaken = doExpensiveWork()
+                progressBar.visibility = View.INVISIBLE
+                textView.text = timeTaken
+            }
         }
     }
 
-    private fun doExpensiveWork(): String {
+    private suspend fun doExpensiveWork() = withContext(Dispatchers.Default) {
+        Log.i(TAG, "doExpensiveWork coroutine thread: ${Thread.currentThread().name}")
         val timeTakenMillis = measureTimeMillis { BigInteger.probablePrime(2200, Random()) }
-        return "Time taken (ms): $timeTakenMillis"
+        "Time taken (ms): $timeTakenMillis"
     }
 
     private fun doApiRequests() {
