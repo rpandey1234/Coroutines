@@ -2,6 +2,7 @@ package edu.stanford.rkpandey.coroutines
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import edu.stanford.rkpandey.coroutines2.BlogService
 import kotlinx.android.synthetic.main.activity_main.*
@@ -10,6 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.math.BigInteger
+import java.util.*
+import kotlin.system.measureTimeMillis
 
 private const val TAG = "MainActivity"
 private const val BASE_URL = "https://jsonplaceholder.typicode.com"
@@ -26,6 +30,18 @@ class MainActivity : AppCompatActivity() {
         btnNetwork.setOnClickListener {
             doApiRequests()
         }
+
+        btnCompute.setOnClickListener {
+            progressBar.visibility = View.VISIBLE
+            val timeTaken = doExpensiveWork()
+            progressBar.visibility = View.INVISIBLE
+            textView.text = timeTaken
+        }
+    }
+
+    private fun doExpensiveWork(): String {
+        val timeTakenMillis = measureTimeMillis { BigInteger.probablePrime(2200, Random()) }
+        return "Time taken (ms): $timeTakenMillis"
     }
 
     private fun doApiRequests() {
