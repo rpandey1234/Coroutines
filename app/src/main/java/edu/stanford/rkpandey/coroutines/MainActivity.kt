@@ -1,13 +1,13 @@
 package edu.stanford.rkpandey.coroutines
 
-import BlogService
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import edu.stanford.rkpandey.coroutines2.BlogService
 import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Log.i(TAG, "onCreate current thread: ${Thread.currentThread().name}")
         btnNetwork.setOnClickListener {
             doApiRequests()
         }
@@ -31,46 +32,16 @@ class MainActivity : AppCompatActivity() {
         val retrofit = Retrofit.Builder().baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create()).build()
         val blogService = retrofit.create(BlogService::class.java)
-        blogService.getPost(1).enqueue(object : Callback<Post> {
-            override fun onFailure(call: Call<Post>, t: Throwable) {
-                Log.e(TAG, "onFailure $t")
+        CoroutineScope(Dispatchers.Main).launch {
+            Log.i(TAG, "doApiRequests coroutine thread: ${Thread.currentThread().name}")
+            try {
+                val blogPost = blogService.getPost(1)
+                val user = blogService.getUser(blogPost.userId)
+                val postsByUser = blogService.getPostsByUser(user.id)
+                textView.text = "User ${user.name} made ${postsByUser.size} posts"
+            } catch (exception: Exception) {
+                Log.e(TAG, "Exception $exception")
             }
-
-            override fun onResponse(call: Call<Post>, response: Response<Post>) {
-                val blogPost = response.body()
-                if (blogPost == null) {
-                    Log.e(TAG, "Did not receive valid response body")
-                    return
-                }
-                blogService.getUser(blogPost.userId).enqueue(object : Callback<User> {
-                    override fun onFailure(call: Call<User>, t: Throwable) {
-                        Log.e(TAG, "onFailure $t")
-                    }
-
-                    override fun onResponse(call: Call<User>, response: Response<User>) {
-                        val user = response.body()
-                        if (user == null) {
-                            Log.e(TAG, "Did not receive valid response body")
-                            return
-                        }
-                        blogService.getPostsByUser(user.id).enqueue(object : Callback<List<Post>> {
-                            override fun onFailure(call: Call<List<Post>>, t: Throwable) {
-                                Log.e(TAG, "onFailure $t")
-                            }
-
-                            override fun onResponse(call: Call<List<Post>>, response: Response<List<Post>>) {
-                                val postsByUser = response.body()
-                                if (postsByUser == null) {
-                                    Log.e(TAG, "Did not receive valid response body")
-                                    return
-                                }
-                                Log.i(TAG, "Done with all network requests!")
-                                textView.text = "User ${user.name} made ${postsByUser.size} posts"
-                            }
-                        })
-                    }
-                })
-            }
-        })
+        }
     }
 }
