@@ -4,9 +4,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import edu.stanford.rkpandey.coroutines2.BlogService
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCompute.setOnClickListener {
-            CoroutineScope(Dispatchers.Main).launch {
+            lifecycleScope.launch(Dispatchers.Main) {
                 progressBar.visibility = View.VISIBLE
                 val timeTaken = doExpensiveWork()
                 progressBar.visibility = View.INVISIBLE
@@ -52,7 +52,8 @@ class MainActivity : AppCompatActivity() {
         val retrofit = Retrofit.Builder().baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create()).build()
         val blogService = retrofit.create(BlogService::class.java)
-        CoroutineScope(Dispatchers.Main).launch {
+        // Lifecycle scope is already bound to Dispatchers.Main.immediate, so no need to specify it
+        lifecycleScope.launch {
             Log.i(TAG, "doApiRequests coroutine thread: ${Thread.currentThread().name}")
             try {
                 val blogPost = blogService.getPost(1)
